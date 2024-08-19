@@ -65,6 +65,7 @@ declare type CollaboratorProps = {
 
 declare type CollaborativeRoomProps = {
 	roomId: string;
+	clerkUserId: string;
 	roomMetadata: RoomMetadata;
 	users: User[];
 	currentUserType: UserType;

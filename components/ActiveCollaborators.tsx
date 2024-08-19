@@ -2,13 +2,17 @@ import { useOthers } from "@liveblocks/react/suspense";
 import Image from "next/image";
 import React from "react";
 
-const ActiveCollaborators = () => {
+const ActiveCollaborators = ({ id }: { id: string }) => {
 	const others = useOthers();
 
 	const collaborators = others.map((other) => other.info);
+
+	const filteredCollaborators = collaborators.filter(
+		(collaborator) => collaborator.id !== id,
+	);
 	return (
 		<ul className="collaborators-list">
-			{collaborators.map(({ id, avatar, name, color }) => (
+			{filteredCollaborators.map(({ id, avatar, name, color }) => (
 				<li key={id}>
 					<Image
 						src={avatar}
