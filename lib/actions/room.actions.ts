@@ -1,5 +1,5 @@
 "use server";
-import { parseStringify } from "./../utils";
+import { getAccessType, parseStringify } from "./../utils";
 import { nanoid } from "nanoid";
 import { liveblocks } from "../liveblocks";
 import { revalidatePath } from "next/cache";
@@ -21,7 +21,7 @@ export const createDocument = async ({
 		const room = await liveblocks.createRoom(roomId, {
 			metadata,
 			usersAccesses,
-			defaultAccesses: ["room:write"],
+			defaultAccesses: [],
 		});
 
 		revalidatePath("/");
@@ -41,11 +41,11 @@ export const getDocument = async ({
 }) => {
 	try {
 		const room = await liveblocks.getRoom(roomId);
-		// TODO:
-		// const hasAccess = Object.keys(room.usersAccesses).includes(userId);
 
-		// if (!hasAccess)
-		// 	throw new Error("You do not have access to this document");
+		const hasAccess = Object.keys(room.usersAccesses).includes(userId);
+
+		if (!hasAccess)
+			throw new Error("You do not have access to this document");
 
 		return parseStringify(room);
 	} catch (error) {
@@ -78,6 +78,53 @@ export const getDocuments = async (email: string) => {
 		// 	throw new Error("You do not have access to this document");
 
 		return parseStringify(rooms);
+	} catch (error) {
+		console.error(error);
+	}
+};
+
+export const updateDocumentAccess = async ({
+	roomId,
+	email,
+	userType,
+	updatedBy,
+}: ShareDocumentParams) => {
+	try {
+		const usersAccesses: RoomAccesses = {
+			[email]: getAccessType(userType) as AccessType,
+		};
+		const room = await liveblocks.updateRoom(roomId, { usersAccesses });
+
+		if (room) {
+			// TODO: send a notification to the user
+		}
+
+		revalidatePath(`/documents/${roomId}`);
+	} catch (error) {
+		console.error(error);
+	}
+};
+
+export const removeCollaborator = async ({
+	roomId,
+	email,
+}: {
+	roomId: string;
+	email: string;
+}) => {
+	try {
+		const room = await liveblocks.getRoom(roomId);
+		if (room.metadata.email === email) {
+			throw new Error("You cannot remove yourself from the document");
+		}
+
+		const updatedRoom = await liveblocks.updateRoom(roomId, {
+			usersAccesses: {
+				[email]: null,
+			},
+		});
+		revalidatePath(`/documents/${roomId}`);
+		return parseStringify(updatedRoom);
 	} catch (error) {
 		console.error(error);
 	}
